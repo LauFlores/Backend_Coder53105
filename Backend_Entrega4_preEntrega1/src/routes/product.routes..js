@@ -15,12 +15,12 @@ productRouter.get("/", async (req, res) => {
   }
 });
 
-productsRouter.get('/', (req, res) => {
+// productsRouter.get('/', (req, res) => {
  
-  const limit = req.query.limit || productos.length;
-  const limitedProducts = productos.slice(0, limit);
-  res.json(limitedProducts);
-});
+//   const limit = req.query.limit || productos.length;
+//   const limitedProducts = productos.slice(0, limit);
+//   res.json(limitedProducts);
+// });
 
 productRouter.get("/:id", async (req, res) => {
   try {

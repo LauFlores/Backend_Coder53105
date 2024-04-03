@@ -23,7 +23,7 @@ class CrudMongoose {
     if (data) {
       let category =
         data.category === undefined ? {} : { category: data.category };
-      let limit = parseInt(data.limit, 10) || 4;
+      let limit = parseInt(data.limit, 10) || 3;
       let page = parseInt(data.page, 10) || 1;
       let skip = limit * page - limit;
       let sort = data.sort || "asc";
@@ -41,7 +41,7 @@ class CrudMongoose {
         },
       ];
     } else {
-      let limit = 4;
+      let limit = 3;
       let page = 1;
       let productsAll = await productModel.paginate(
         {},

@@ -1,7 +1,7 @@
 const supertest = require("supertest");
 let expect;
 let requester;
-let cookie;
+
 
 before(async function () {
     const chai = await import("chai");

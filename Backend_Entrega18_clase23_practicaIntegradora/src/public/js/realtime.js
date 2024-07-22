@@ -1,95 +1,186 @@
-const roleElement = document.getElementById("role");
-const emailElement = document.getElementById("email");
 
-const role = roleElement && roleElement.textContent.trim();
-const email = emailElement && emailElement.textContent.trim();
-
-const socket = io(); 
+const socket = io();
+const role = document.getElementById("role").textContent;
+const email = document.getElementById("email").textContent;
+const form = document.getElementById("formularioProductos");
 
 socket.on("products", (data) => {
-    productsRender(data);
-});
+    renderproducts(data);
+})
 
-// Renderizado de productos
-const productsRender = (products) => {
-    const productsContainer = document.getElementById("productsContainer");
-    productsContainer.innerHTML = "";
+//Función para renderizar nuestros productos: 
 
-    const row = document.createElement("div");
-    row.classList.add("row");
+const renderproducts = (products) => {
+    const contenedorProductos = document.getElementById("contenedorProductos");
+    contenedorProductos.innerHTML = "";
 
     products.docs.forEach(item => {
-        // Filtrar productos para usuarios premium
-        if (role === "premium" && item.owner !== email) {
-            return; // Saltar este producto si no es del usuario premium
-        }
-
         const card = document.createElement("div");
-        card.classList.add("card", "real-time-card", "col-12", "col-sm-6", "col-md-4", "col-lg-3", "mb-3");
+        card.classList.add("card");
 
-        card.innerHTML = `
-        <div class="card-body">
-            <h5 class="card-title">${item.title}</h5>
-            <p class="card-text">Precio: ${item.price}</p>
-            <button class="btn btn-danger">Eliminar</button>
-        </div>
-    `;
+        card.innerHTML = ` 
+                        <p> ${item.title} </p>
+                        <p> ${item.price} </p>
+                        <p> Owner: ${item.owner} </p>
+                        <button class="modificar"> Modificar </button>
+                        <button class="eliminar"> Eliminar </button>
+                        `;
 
-        row.appendChild(card);
-
-        // Evento para boton eliminar
-        card.querySelector("button").addEventListener("click", () => {
+        contenedorProductos.appendChild(card);
+        card.querySelector(".eliminar").addEventListener("click", () => {
             if (role === "premium" && item.owner === email) {
-                deleteProduct(item._id);
+                eliminarProducto(item._id);
             } else if (role === "admin") {
-                deleteProduct(item._id);
+                eliminarProducto(item._id);
             } else {
                 Swal.fire({
                     title: "Error",
-                    text: "No tiene permiso para eliminar este producto", 
+                    text: "No tenes permiso para borrar ese producto",
+                })
+            }
+        });
+
+        // Evento para modificar producto
+        card.querySelector(".modificar").addEventListener("click", () => {
+            if (role === "premium" && item.owner === email || role === "admin") {
+                abrirFormularioModificar(item);
+            } else {
+                Swal.fire({
+                    title: "Error",
+                    text: "No tienes permiso para modificar ese producto",
                 });
             }
         });
-    });
+    })
+}
 
-    productsContainer.appendChild(row);
-};
 
-// Eliminar producto
-const deleteProduct = (id) => {
-    socket.emit("deleteProduct", id);
-};
+const eliminarProducto = (id) => {
+    socket.emit("eliminarProducto", id);
+}
 
-// Agregar productos desde el form
-document.getElementById("btnSend").addEventListener("click", (event) => {
-    event.preventDefault();
-    addProduct();
-});
+//Agregamos productos del formulario: 
 
-const addProduct = () => {
+document.getElementById("btnEnviar").addEventListener("click", (e) => {
+    e.preventDefault();
+    agregarProducto();
+    // form.reset();
+})
+
+
+const agregarProducto = () => {
+    const role = document.getElementById("role").textContent;
+    const email = document.getElementById("email").textContent;
+
     const owner = role === "premium" ? email : "admin";
 
-    const product = {
+    const products = {
         title: document.getElementById("title").value,
         description: document.getElementById("description").value,
-        code: document.getElementById("code").value,
         price: document.getElementById("price").value,
+        img: document.getElementById("img").value,
+        code: document.getElementById("code").value,
         stock: document.getElementById("stock").value,
         category: document.getElementById("category").value,
-        img: document.getElementById("img").value,
         status: document.getElementById("status").value === "true",
         owner
     };
 
-    socket.emit("addProduct", product);
+    socket.emit("agregarProducto", products);
+}
 
-    // Limpiar los campos del formulario
+// const abrirFormularioModificar = (item) => {
+//     // Llenamos el formulario con los datos del producto
+//     document.getElementById("title").value = item.title;
+//     document.getElementById("description").value = item.description;
+//     document.getElementById("price").value = item.price;
+//     document.getElementById("img").value = item.img;
+//     document.getElementById("code").value = item.code;
+//     document.getElementById("stock").value = item.stock;
+//     document.getElementById("category").value = item.category;
+//     document.getElementById("status").value = item.status ? "true" : "false";
+
+//     // Cambiamos el botón de enviar para que modifique el producto
+//     const btnModificar = document.getElementById("btnEnviar");
+//     btnModificar.textContent = "Modificar Producto";
+//     btnModificar.removeEventListener("click", agregarProducto);
+//     btnModificar.addEventListener("click", () => modificarProducto(item._id));
+// }
+
+const abrirFormularioModificar = (item) => {
+    // Llenamos el formulario con los datos del producto
+    document.getElementById("title").value = item.title;
+    document.getElementById("description").value = item.description;
+    document.getElementById("price").value = item.price;
+    document.getElementById("img").value = item.img;
+    document.getElementById("code").value = item.code;
+    document.getElementById("stock").value = item.stock;
+    document.getElementById("category").value = item.category;
+    document.getElementById("status").value = item.status ? "true" : "false";
+
+    // Cambiamos el botón de enviar para que modifique el producto
+    const btnModificar = document.getElementById("btnEnviar");
+    btnModificar.textContent = "Modificar Producto";
+    btnModificar.removeEventListener("click", agregarProducto);
+    btnModificar.addEventListener("click", () => {
+        modificarProducto(item._id);
+        btnModificar.textContent = "Agregar Producto"; // Restaurar el texto del botón después de modificar
+        btnModificar.removeEventListener("click", modificarProducto);
+        btnModificar.addEventListener("click", agregarProducto);
+        vaciarFormulario(); // Vaciar el formulario después de modificar
+        ocultarCancelar(); // Ocultar el botón de cancelar después de modificar
+    });
+
+    mostrarCancelar(); // Mostrar el botón de cancelar al abrir el formulario de modificación
+};
+
+const vaciarFormulario = () => {
     document.getElementById("title").value = "";
     document.getElementById("description").value = "";
-    document.getElementById("code").value = "";
     document.getElementById("price").value = "";
+    document.getElementById("img").value = "Sin Imagen";
+    document.getElementById("code").value = "";
     document.getElementById("stock").value = "";
     document.getElementById("category").value = "";
-    document.getElementById("img").value = "";
-    document.getElementById("status").value = "true"; // Restaurar valor por defecto
+    document.getElementById("status").value = "false"; // Asumiendo que el valor predeterminado es false para el estado
 };
+
+const mostrarCancelar = () => {
+    const btnCancelar = document.getElementById("btnCancelar");
+    btnCancelar.style.display = "inline-block"; // Mostrar el botón de cancelar
+    btnCancelar.addEventListener("click", () => {
+        vaciarFormulario();
+        ocultarCancelar(); // Ocultar el botón de cancelar después de cancelar la modificación
+    });
+};
+
+const ocultarCancelar = () => {
+    const btnCancelar = document.getElementById("btnCancelar");
+    btnCancelar.style.display = "none"; // Ocultar el botón de cancelar
+};
+
+
+const modificarProducto = (id) => {
+    const products = {
+        title: document.getElementById("title").value,
+        description: document.getElementById("description").value,
+        price: document.getElementById("price").value,
+        img: document.getElementById("img").value,
+        code: document.getElementById("code").value,
+        stock: document.getElementById("stock").value,
+        category: document.getElementById("category").value,
+        status: document.getElementById("status").value === "true"
+    };
+
+    console.log("Valores del formulario:", products); // Verifica los valores aquí
+
+    socket.emit("modificarProducto", { id, products });
+
+    // Restauramos el formulario para agregar productos
+    const btnModificar = document.getElementById("btnEnviar");
+    btnModificar.textContent = "Agregar Producto";
+    btnModificar.removeEventListener("click", modificarProducto);
+    btnModificar.addEventListener("click", agregarProducto);
+
+
+}

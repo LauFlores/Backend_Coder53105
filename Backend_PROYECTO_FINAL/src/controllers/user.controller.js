@@ -11,6 +11,11 @@ const EmailManager = require("../services/email.js");
 const emailManager = new EmailManager();
 
 class UserController {
+  constructor(userRepository, emailManager) {
+    this.userRepository = userRepository;
+    this.emailManager = emailManager;
+  }
+
   async registerUser(req, res) {
     passport.authenticate("register", { failureRedirect: "/api/users/failedregister" })(req, res, async () => {
       if (!req.user) return res.status(400).send({ status: "error" });
@@ -169,6 +174,70 @@ class UserController {
       res.status(500).json({ message: 'Error interno del servidor' });
     }
   }
-}
 
+  async getAllUsers(req, res) {
+    try {
+      const users = await userRepository.getAllUsers();
+      const userData = users.map(user => ({
+        name: user.fullname,
+        email: user.email,
+        role: user.role,
+        last_connection: user.last_connection
+      }));
+      res.json(userData);
+    } catch (error) {
+      console.error('Error al obtener todos los usuarios:', error);
+      res.status(500).json({ error: 'Error del servidor' });
+    }
+  }
+
+
+
+  async adminUsersView(req, res) {
+    try {
+      const users = await userRepository.getAllUsers();
+      res.render('users', { users });
+    } catch (error) {
+      console.error('Error al cargar la vista de administración de usuarios:', error);
+      res.status(500).json({ error: 'Error del servidor' });
+    }
+  }
+
+  async deleteInactiveUsers(req, res) {
+    try {
+      // Definir el criterio de inactividad: usuarios que no se han conectado en los últimos 2 días
+      const inactivityThreshold = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000); // 2 * 24 * 60 * 60 * 1000 para 2 días y 30 * 60 * 1000 para 30 minutos
+
+      // Obtener los usuarios inactivos desde el repositorio
+      const { deletedCount, deletedUsers } = await userRepository.deleteInactiveUsers(inactivityThreshold);
+
+      // Enviar correos electrónicos de notificación a los usuarios eliminados
+      for (const user of deletedUsers) {
+        await emailManager.sendAccountDeletionEmail(user.email, user.name);
+      }
+
+      res.json({ message: `${deletedCount} usuarios inactivos eliminados` });
+    } catch (error) {
+      console.error('Error al eliminar usuarios inactivos:', error);
+      res.status(500).json({ message: 'Error interno del servidor' });
+    }
+  }
+  async deleteUser(req, res) {
+    try {
+        const userId = req.params.uid;
+        const user = await userRepository.deleteUserById(userId);
+
+        if (user) {
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+
+        res.status(200).json({ message: 'Usuario eliminado correctamente' });
+    } catch (error) {
+        req.logger.error('Error al eliminar usuario:', error);
+        res.status(500).json({ message: 'Error del servidor al eliminar usuario' });
+    }
+  }
+
+}
 module.exports = UserController;
+

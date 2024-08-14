@@ -4,6 +4,8 @@ const cartRepository = new CartRepository();
 const { logger } = require("../utils/logger.js"); // Importa el logger
 const ProductRepository = require("../repositories/product.repository.js");
 const productRepository = new ProductRepository(logger);
+const UserRepository = require("../repositories/user.repository.js");
+const userRepository = new UserRepository();
 const UserDTO = require('../dto/user.dto.js');
 
 
@@ -23,14 +25,10 @@ class ViewsController {
                 return { id: _id, ...rest };
             });
 
-            // Verificar si el usuario es administrador
-            //const isAdmin = req.session.user && req.session.user.role === "admin";
 
             // Verificar si el cartId está definido
             const cartId = req.session.user.cartId || null;
 
-            // Agregar registro para imprimir el cartId
-            //req.logger.info("Cart ID en el controlador de vistas:", cartId);
 
             // Renderizar la vista de productos con un mensaje de bienvenida diferente
             res.render("products", {
@@ -160,6 +158,23 @@ class ViewsController {
         }
     }
 
+    // Nueva vista para la administración de usuarios
+    async adminUsersView(req, res) {
+        try {
+        const users = await userRepository.getAllUsers();
+        const userData = users.map(user => ({
+            name: `${user.first_name} ${user.last_name}`,
+            email: user.email,
+            role: user.role,
+            last_connection: user.last_connection,
+            _id: user._id.toString()  // Asegúrate de convertir el ObjectId a String si es necesario
+        }));
+        res.render('users', { users: userData });
+        } catch (error) {
+        console.error('Error al obtener usuarios para vista de administración:', error);
+        res.status(500).json({ error: 'Error del servidor' });
+        }
+    }
 
 }
 

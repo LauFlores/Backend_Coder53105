@@ -5,8 +5,9 @@ const userController = new UserController();
 const UserRepository = require("../repositories/user.repository.js");
 const userRepository = new UserRepository();
 const upload = require("../middleware/multer.js");
+const { isAdmin } = require('../middleware/auth.middleware.js');
 
-router.post("/", userController.registerUser);
+router.post("/register", userController.registerUser);
 router.get("/failedregister", userController.failedRegister);
 
 //Tercer integradora: 
@@ -63,5 +64,22 @@ router.post("/:uid/documents", upload.fields([{ name: "document" }, { name: "pro
     }
 })
 
+
+router.delete("/users/:id", isAdmin, async (req, res) => {
+    const { id } = req.params;
+    try {
+        await userRepository.deleteUserById(id);
+        res.json({ message: "Usuario eliminado exitosamente" });
+    } catch (error) {
+        console.error('Error al eliminar usuario:', error);
+        res.status(500).json({ message: 'Error interno del servidor' });
+    }
+});
+
+// Rutas para la administración de usuarios
+router.get("/users", isAdmin, userController.adminUsersView.bind(userController));
+router.delete("/inactive", isAdmin, userController.deleteInactiveUsers.bind(userController));
+// Ruta para eliminar un usuario por ID
+router.delete('/:uid', userController.deleteUser.bind(userController));
 
 module.exports = router;

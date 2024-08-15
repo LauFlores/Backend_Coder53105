@@ -89,23 +89,6 @@ const agregarProducto = () => {
     socket.emit("agregarProducto", products);
 }
 
-// const abrirFormularioModificar = (item) => {
-//     // Llenamos el formulario con los datos del producto
-//     document.getElementById("title").value = item.title;
-//     document.getElementById("description").value = item.description;
-//     document.getElementById("price").value = item.price;
-//     document.getElementById("img").value = item.img;
-//     document.getElementById("code").value = item.code;
-//     document.getElementById("stock").value = item.stock;
-//     document.getElementById("category").value = item.category;
-//     document.getElementById("status").value = item.status ? "true" : "false";
-
-//     // Cambiamos el botón de enviar para que modifique el producto
-//     const btnModificar = document.getElementById("btnEnviar");
-//     btnModificar.textContent = "Modificar Producto";
-//     btnModificar.removeEventListener("click", agregarProducto);
-//     btnModificar.addEventListener("click", () => modificarProducto(item._id));
-// }
 
 const abrirFormularioModificar = (item) => {
     // Llenamos el formulario con los datos del producto
